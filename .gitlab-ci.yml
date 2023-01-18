@@ -1,0 +1,25 @@
+image: docker:latest
+
+variables:
+  DOCKER_HOST: tcp://docker:2375/
+  DOCKER_DRIVER: overlay2
+  # See https://github.com/docker-library/docker/pull/166
+  DOCKER_TLS_CERTDIR: ""
+  IMAGE_TAG: tedmax100/gitlabtest:latest
+
+services:
+    - name: docker:dind
+      entrypoint: ["env", "-u", "DOCKER_HOST"]
+      command: ["dockerd-entrypoint.sh"]
+
+before_script:
+  - echo "${DOCKERHUB_PWD}" | docker login -u "${DOCKERHUB_USER}" --password-stdin
+stages:
+  - deploy
+
+
+dockerdeploy:
+  stage: deploy
+  script:
+    - docker build -t $IMAGE_TAG .
+    - docker push $IMAGE_TAG
