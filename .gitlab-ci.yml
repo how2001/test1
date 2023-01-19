@@ -1,25 +1,29 @@
-image: docker:latest
+image: golang:latest
 
 variables:
-  DOCKER_HOST: tcp://docker:2375/
-  DOCKER_DRIVER: overlay2
-  # See https://github.com/docker-library/docker/pull/166
-  DOCKER_TLS_CERTDIR: ""
-  IMAGE_TAG: tedmax100/gitlabtest:latest
-
-services:
-    - name: docker:dind
-      entrypoint: ["env", "-u", "DOCKER_HOST"]
-      command: ["dockerd-entrypoint.sh"]
+  ARTIFACTS_DIR: artifacts
+  GO_PROJECT: gitlab.com/username/projectname
 
 before_script:
-  - echo "${DOCKERHUB_PWD}" | docker login -u "${DOCKERHUB_USER}" --password-stdin
+  - go version
+  - export GO111MODULE=on
+  - mkdir -p ${CI_PROJECT_DIR}/${ARTIFACTS_DIR}
+ 
 stages:
-  - deploy
+  - build
+  - test
 
-
-dockerdeploy:
-  stage: deploy
+gotest:
+  stage: test
   script:
-    - docker build -t $IMAGE_TAG .
-    - docker push $IMAGE_TAG
+    - go test ./...
+
+
+gobuild:
+  stage: build
+  script:
+    - go build -o  ${CI_PROJECT_DIR}/${ARTIFACTS_DIR}/main
+  artifacts:
+    paths:
+      - ${ARTIFACTS_DIR}
+    expire_in: 1h
